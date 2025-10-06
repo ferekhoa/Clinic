@@ -2,7 +2,7 @@
 import { Routes, Route, Navigate } from "react-router-dom";
 import NavBar from "./components/NavBar";
 import ProtectedRoute from "./components/ProtectedRoute";
-import SignIn from "./pages/SignIn";
+import SignIn from "./pages/login/SignIn";
 import Dashboard from "./pages/Dashboard";
 import PatientsList from "./pages/patients/PatientsList";
 import PatientForm from "./pages/patients/PatientForm";
