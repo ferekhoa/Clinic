@@ -142,12 +142,12 @@ export default function SignIn() {
                     </button>
                 </form>
 
-                <div className="auth-foot">
+                {/* <div className="auth-foot">
                     <span>Don’t have an account?</span>{" "}
                     <a className="auth-link" href="/register">
                         Create one
                     </a>
-                </div>
+                </div> */}
             </div>
         </div>
     );
