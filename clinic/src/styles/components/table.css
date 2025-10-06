@@ -1,0 +1,34 @@
+.table {
+    margin-top: 10px;
+    background: #fff;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    overflow: hidden;
+}
+
+.thead,
+.trow {
+    display: grid;
+    grid-template-columns: 2fr 1.2fr 1fr 1fr;
+    gap: 10px;
+    padding: 12px 14px;
+}
+
+.thead {
+    font-weight: 700;
+    background: var(--bg-soft);
+    border-bottom: 1px solid var(--border);
+}
+
+.trow+.trow {
+    border-top: 1px solid var(--border);
+}
+
+.trow a {
+    color: var(--primary);
+    text-decoration: none;
+}
+
+.trow a:hover {
+    color: var(--primary-700);
+}

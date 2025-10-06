@@ -1,0 +1,41 @@
+/* Theme variables — default to LIGHT */
+:root {
+    /* Surfaces & text */
+    --bg: #f5f7fb;
+    --bg-soft: #eef2f9;
+    --card: #ffffffee;
+    --border: #dee5f2;
+    --text: #0d1224;
+    --muted: #55607a;
+
+    /* Brand */
+    --primary: #2850ff;
+    --primary-600: #2346e6;
+    --primary-700: #1f3dcc;
+    --danger: #e5484d;
+    --success: #17c964;
+    --warning: #f5a524;
+
+    /* FX */
+    --ring: 0 0 0 3px #2850ff2b;
+    --radius: 16px;
+    --radius-sm: 10px;
+    --radius-lg: 20px;
+    --shadow: 0 14px 40px rgba(37, 48, 82, 0.12);
+
+    /* Typography */
+    --font-sans: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Inter, "Helvetica Neue", Arial, "Noto Sans", "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
+    --fs-12: 12px;
+    --fs-13: 13px;
+    --fs-14: 14px;
+    --fs-15: 15px;
+    --fs-18: 18px;
+}
+
+html,
+body {
+    background: #fff;
+    /* keep it light */
+    color: var(--text);
+    font-family: var(--font-sans);
+}

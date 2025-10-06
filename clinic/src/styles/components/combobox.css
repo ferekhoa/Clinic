@@ -1,0 +1,46 @@
+/* SelectLikeCombobox */
+.slc {
+    position: relative;
+}
+
+.slc-inputwrap {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: .5rem;
+    align-items: center;
+}
+
+.slc-chip {
+    font-size: var(--fs-12);
+    padding: 2px 6px;
+    border-radius: 999px;
+    border: 1px solid var(--border);
+    background: #f8fafc;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.slc-menu {
+    position: absolute;
+    z-index: 50;
+    top: calc(100% + 4px);
+    left: 0;
+    right: 0;
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, .08);
+    max-height: 260px;
+    overflow: auto;
+}
+
+.slc-item {
+    padding: 8px 10px;
+    cursor: pointer;
+}
+
+.slc-item.is-active,
+.slc-item:hover {
+    background: #eef2ff;
+}

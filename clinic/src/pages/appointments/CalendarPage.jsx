@@ -4,6 +4,10 @@ import { format, parse, startOfWeek, getDay } from "date-fns";
 import enUS from "date-fns/locale/en-US";
 import { supabase } from "../../lib/supabase";
 import "react-big-calendar/lib/css/react-big-calendar.css";
+import Modal from "../../components/Modal";
+import VisitFromAppointment from "../../components/VisitFromAppointment";
+import SelectLikeCombobox from "../../components/SelectLikeCombobox";
+import useDebouncedValue from "../../hooks/useDebouncedValue";
 
 const locales = { "en-US": enUS };
 const localizer = dateFnsLocalizer({
@@ -15,8 +19,32 @@ const localizer = dateFnsLocalizer({
 });
 
 export default function CalendarPage() {
-    const [events, setEvents] = useState([]); // {id, title, start, end}
+    const [events, setEvents] = useState([]); // {id, title, start, end, resource}
     const [err, setErr] = useState("");
+
+    // toolbar control (fix Month/Week/Day/Agenda, Today, Back, Next)
+    const [view, setView] = useState("week");        // "month" | "week" | "day" | "agenda"
+    const [date, setDate] = useState(new Date());    // current visible date
+
+    // create-appointment modal state
+    const [createOpen, setCreateOpen] = useState(false);
+    const [slot, setSlot] = useState({ start: null, end: null });
+    const [saving, setSaving] = useState(false);
+
+    // combobox state (patient, room)
+    const [patientQuery, setPatientQuery] = useState("");
+    const debPatientQuery = useDebouncedValue(patientQuery, 250);
+    const [patientOptions, setPatientOptions] = useState([]); // {value,label,raw}
+    const [patientOpt, setPatientOpt] = useState(null);
+
+    const [roomQuery, setRoomQuery] = useState("");
+    const debRoomQuery = useDebouncedValue(roomQuery, 200);
+    const [roomOptions, setRoomOptions] = useState([]); // {value,label}
+    const [roomOpt, setRoomOpt] = useState(null);
+
+    // event action modal (complete / no-show) + visit modal
+    const [actionAppt, setActionAppt] = useState(null); // raw appointment row
+    const [visitModalOpen, setVisitModalOpen] = useState(false);
 
     const load = useCallback(async () => {
         setErr("");
@@ -29,7 +57,7 @@ export default function CalendarPage() {
         status,
         room,
         patient_id,
-        patient:patients ( first_name, last_name )
+        patient:patients ( id, first_name, last_name, phone, dob )
       `)
             .order("starts_at", { ascending: true });
 
@@ -48,99 +76,137 @@ export default function CalendarPage() {
             );
     }, []);
 
+    useEffect(() => { load(); }, [load]);
+
+    // --- combobox loaders ---
     useEffect(() => {
-        load();
-    }, [load]);
-
-    // ---- helper: find patient by "First Last" (with sensible fallbacks) ----
-    async function findPatientByFullName(input) {
-        const raw = String(input || "").trim();
-        if (!raw) return null;
-
-        const parts = raw.split(/\s+/);
-        const first = parts[0] ?? "";
-        const last = parts.slice(1).join(" ").trim(); // supports middle names
-
-        // 1) If both provided, try exact-ish (prefix) match on both fields.
-        if (first && last) {
-            const { data, error } = await supabase
+        (async () => {
+            const q = debPatientQuery.trim();
+            const or = q ? `ilike.first_name.%${q}%,ilike.last_name.%${q}%` : undefined;
+            let query = supabase
                 .from("patients")
                 .select("id, first_name, last_name")
-                .ilike("first_name", `${first}%`)
-                .ilike("last_name", `${last}%`)
                 .order("first_name", { ascending: true })
                 .order("last_name", { ascending: true })
                 .limit(20);
-
-            if (!error && data?.length) {
-                return await handleDisambiguation(raw, data);
+            if (or) query = query.or(or);
+            const { data, error } = await query;
+            if (!error) {
+                const opts = (data || []).map((p) => ({
+                    value: p.id,
+                    label: `${p.first_name ?? ""} ${p.last_name ?? ""}`.trim(),
+                    raw: p,
+                }));
+                setPatientOptions(opts);
             }
-        }
+        })();
+    }, [debPatientQuery]);
 
-        // 2) Fallback: search either column contains the typed text.
-        const pattern = `%${raw}%`;
-        const { data: anyData, error: anyErr } = await supabase
-            .from("patients")
-            .select("id, first_name, last_name")
-            .or(`ilike.first_name.${pattern},ilike.last_name.${pattern}`)
-            .order("first_name", { ascending: true })
-            .order("last_name", { ascending: true })
-            .limit(20);
+    useEffect(() => {
+        (async () => {
+            const q = debRoomQuery.trim();
+            let rows = [];
+            const roomsTable = await supabase
+                .from("rooms")
+                .select("name")
+                .ilike("name", q ? `%${q}%` : "%")
+                .order("name", { ascending: true })
+                .limit(20);
+            if (!roomsTable.error && roomsTable.data) {
+                rows = roomsTable.data.map((r) => r.name);
+            } else {
+                const { data, error } = await supabase
+                    .from("appointments")
+                    .select("room")
+                    .not("room", "is", null)
+                    .order("room", { ascending: true });
+                if (!error && data) {
+                    const all = Array.from(new Set(data.map((r) => r.room).filter(Boolean)));
+                    rows = q ? all.filter((r) => String(r).toLowerCase().includes(q.toLowerCase())) : all;
+                }
+            }
+            const opts = rows.slice(0, 20).map((r) => ({ value: r, label: r }));
+            if (q && !opts.find((o) => o.label.toLowerCase() === q.toLowerCase())) {
+                opts.unshift({ value: q, label: q });
+            }
+            setRoomOptions(opts);
+        })();
+    }, [debRoomQuery]);
 
-        if (anyErr || !anyData?.length) return null;
-
-        return await handleDisambiguation(raw, anyData);
+    // --- create appointment flow ---
+    function onSelectSlot({ start, end, action }) {
+        if (action !== "select") return;
+        setSlot({ start, end });
+        setCreateOpen(true);
+        setPatientQuery("");
+        setPatientOpt(null);
+        setRoomQuery("");
+        setRoomOpt(null);
     }
 
-    async function handleDisambiguation(raw, rows) {
-        if (rows.length === 1) return rows[0].id;
-
-        // If there are multiple, ask the user which one.
-        const message =
-            `Multiple patients matched “${raw}”.\n` +
-            rows
-                .map(
-                    (p, i) =>
-                        `${i + 1}) ${p.first_name ?? ""} ${p.last_name ?? ""}`.trim()
-                )
-                .join("\n") +
-            `\n\nEnter the number (or cancel):`;
-
-        const choice = prompt(message);
-        if (!choice) return null;
-        const idx = Number(choice) - 1;
-        if (!Number.isInteger(idx) || idx < 0 || idx >= rows.length) return null;
-
-        return rows[idx].id;
-    }
-
-    // ---- create appointment: now asks for full name, not patient_id ----
-    async function createAppointment({ start, end }) {
-        setErr("");
-
-        const fullName = prompt(
-            "Patient full name (First Last). You can type part of the name too:"
-        );
-        if (!fullName) return;
-
-        const patientId = await findPatientByFullName(fullName);
-        if (!patientId) {
-            alert("No matching patient (or selection cancelled).");
+    async function saveAppointment() {
+        if (!patientOpt?.value) {
+            alert("Please select a patient");
             return;
         }
-
-        const room = prompt("Room (optional)") || null;
-        const { error } = await supabase.from("appointments").insert({
-            patient_id: patientId,
-            room,
-            starts_at: start.toISOString(),
-            ends_at: end.toISOString(),
-            status: "booked",
-        });
-
-        if (error) alert(error.message); // overlap trigger errors show here
-        else load();
+        const room = roomOpt?.value || null;
+        try {
+            setSaving(true);
+            setErr("");
+            const { error } = await supabase.from("appointments").insert({
+                patient_id: patientOpt.value,
+                room,
+                starts_at: slot.start.toISOString(),
+                ends_at: slot.end.toISOString(),
+                status: "booked",
+            });
+            if (error) throw error;
+            setCreateOpen(false);
+            await load();
+        } catch (e) {
+            setErr(e.message || String(e));
+            alert(e.message || String(e));
+        } finally {
+            setSaving(false);
+        }
     }
+
+    // event click → actions
+    function onEventSelect(ev) {
+        setActionAppt(ev.resource); // raw appointment row
+    }
+
+    async function markNoShow() {
+        if (!actionAppt) return;
+        const { error } = await supabase
+            .from("appointments")
+            .update({ status: "no_show" })
+            .eq("id", actionAppt.id);
+        if (error) alert(error.message);
+        setActionAppt(null);
+        load();
+    }
+
+    function startVisitFlow() {
+        setVisitModalOpen(true);
+    }
+
+    // color appointments by status
+    const eventPropGetter = useCallback((event) => {
+        const status = event?.resource?.status || "booked";
+        let bg = "var(--primary)";       // booked
+        let color = "#fff";
+        if (status === "completed") bg = "#17c964";     // green
+        if (status === "no_show") bg = "#e5484d";      // red
+        return {
+            style: {
+                backgroundColor: bg,
+                color,
+                border: 0,
+                borderRadius: 8,
+            }
+        };
+    }, []);
 
     const selectable = true;
     const defaultDate = useMemo(() => new Date(), []);
@@ -153,21 +219,104 @@ export default function CalendarPage() {
                 <Calendar
                     localizer={localizer}
                     events={events}
+                    // toolbar buttons now work (controlled)
+                    view={view}
+                    onView={(v) => setView(v)}
+                    date={date}
+                    onNavigate={(newDate) => setDate(newDate)}
                     defaultView="week"
                     selectable={selectable}
-                    onSelectSlot={({ start, end, action }) => {
-                        if (action === "select") createAppointment({ start, end });
-                    }}
+                    onSelectSlot={onSelectSlot}
+                    onSelectEvent={onEventSelect}
+                    eventPropGetter={eventPropGetter}
+                    min={new Date(1970, 1, 1, 8, 0, 0)}
+                    max={new Date(1970, 1, 1, 20, 0, 0)}
                     style={{ height: 600 }}
                     step={30}
                     timeslots={2}
                     defaultDate={defaultDate}
                 />
             </div>
-            <p style={{ opacity: 0.7, marginTop: 8 }}>
-                Tip: Select a time range to create an appointment. You can type part of
-                the patient’s name and pick from matches.
-            </p>
+
+            {/* Choose action for a clicked appointment */}
+            <Modal
+                open={!!actionAppt && !visitModalOpen}
+                onClose={() => setActionAppt(null)}
+                title="Appointment actions"
+            >
+                {!actionAppt ? null : (
+                    <div className="stack gap-2">
+                        <div>
+                            <b>{(actionAppt.patient?.first_name || "")} {(actionAppt.patient?.last_name || "")}</b>
+                            <div style={{ opacity: 0.7, fontSize: 12 }}>
+                                {new Date(actionAppt.starts_at).toLocaleString()}
+                                {" → "}
+                                {new Date(actionAppt.ends_at).toLocaleTimeString()}
+                                {" • Room "}
+                                {actionAppt.room || "—"}
+                            </div>
+                            <div style={{ marginTop: 4 }}>Current status: {actionAppt.status}</div>
+                        </div>
+                        <div className="row gap-1" style={{ marginTop: 12 }}>
+                            <button className="btn btn-primary" onClick={startVisitFlow}>Patient came & finished</button>
+                            <button className="btn btn-ghost" onClick={markNoShow}>No-show</button>
+                        </div>
+                    </div>
+                )}
+            </Modal>
+
+            {/* Visit details flow */}
+            <Modal
+                open={visitModalOpen}
+                onClose={() => { setVisitModalOpen(false); setActionAppt(null); }}
+                title="Finish Visit"
+            >
+                {actionAppt && (
+                    <VisitFromAppointment
+                        appointment={actionAppt}
+                        onDone={() => { setVisitModalOpen(false); setActionAppt(null); load(); }}
+                    />
+                )}
+            </Modal>
+
+            {/* New appointment modal */}
+            <Modal open={createOpen} onClose={() => setCreateOpen(false)} title="New Appointment">
+                <div className="form">
+                    <div style={{ marginBottom: 8 }}>
+                        <div><b>Start:</b> {slot.start ? new Date(slot.start).toLocaleString() : "—"}</div>
+                        <div><b>End:</b> {slot.end ? new Date(slot.end).toLocaleString() : "—"}</div>
+                    </div>
+
+                    <label>Patient</label>
+                    <SelectLikeCombobox
+                        placeholder="Type to search patients…"
+                        inputValue={patientQuery}
+                        onInputChange={setPatientQuery}
+                        options={patientOptions}
+                        value={patientOpt}
+                        onChange={setPatientOpt}
+                        getOptionLabel={(o) => o.label}
+                    />
+
+                    <label style={{ marginTop: 8 }}>Room</label>
+                    <SelectLikeCombobox
+                        placeholder="Type to search or add a room…"
+                        inputValue={roomQuery}
+                        onInputChange={setRoomQuery}
+                        options={roomOptions}
+                        value={roomOpt}
+                        onChange={setRoomOpt}
+                        getOptionLabel={(o) => o.label}
+                    />
+
+                    <div className="row" style={{ marginTop: 12, gap: 8 }}>
+                        <button className="btn" onClick={() => setCreateOpen(false)} type="button">Cancel</button>
+                        <button className="btn btn-primary" onClick={saveAppointment} disabled={saving || !patientOpt}>
+                            {saving ? "Saving…" : "Save"}
+                        </button>
+                    </div>
+                </div>
+            </Modal>
         </div>
     );
 }
