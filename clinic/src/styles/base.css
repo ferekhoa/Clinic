@@ -150,3 +150,460 @@ a {
 .visit-sep {
     height: 10px;
 }
+
+/* ===== Patient hero card ===== */
+.patient-card {
+    display: grid;
+    gap: 12px;
+}
+
+.patient-hero {
+    display: grid;
+    grid-template-columns: 56px 1fr;
+    gap: 12px;
+    align-items: center;
+}
+
+.patient-avatar {
+    width: 56px;
+    height: 56px;
+    border-radius: 14px;
+    display: grid;
+    place-items: center;
+    background: linear-gradient(135deg, #8aa7ff, var(--primary));
+    color: #fff;
+    font-weight: 800;
+    box-shadow: 0 10px 22px #5b8cff33, inset 0 1px 0 #ffffff33;
+    font-size: 18px;
+}
+
+.patient-id-block {
+    display: grid;
+    gap: 6px;
+}
+
+.patient-name {
+    font-size: 18px;
+    font-weight: 800;
+    letter-spacing: .2px;
+}
+
+.patient-meta {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.chip {
+    font-size: 12px;
+    padding: 4px 8px;
+    border-radius: 999px;
+    border: 1px solid var(--border);
+    background: #f9fbff;
+}
+
+/* Notes section */
+.patient-notes {
+    border-top: 1px solid var(--border);
+    padding-top: 10px;
+}
+
+.patient-notes .label {
+    font-size: 12px;
+    color: var(--muted);
+    margin-bottom: 4px;
+}
+
+.note-text {
+    white-space: pre-wrap;
+}
+
+/* Section headers */
+.section-head {
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+    margin-bottom: 8px;
+}
+
+.section-head h3 {
+    margin: 0;
+}
+
+.muted {
+    color: var(--muted);
+}
+
+/* Form layout niceties */
+.form-visit .form-row {
+    display: grid;
+    gap: 10px;
+}
+
+.form-visit .form-row.two {
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+}
+
+.form-visit .form-col {
+    display: grid;
+    gap: 6px;
+}
+
+.input {
+    /* inherits from your global input styles */
+}
+
+.input-file {
+    padding: 6px;
+    border-radius: 10px;
+    border: 1px solid var(--border);
+    background: #fff;
+}
+
+.align-center {
+    align-items: center;
+}
+
+/* Right side card tone */
+.soft-card {
+    background: #fff;
+}
+
+/* ===== Visits compact list ===== */
+.visit-list {
+    display: block;
+}
+
+.visit-item {
+    width: 100%;
+    display: grid;
+    grid-template-columns: 220px 1fr auto;
+    gap: 12px;
+    align-items: center;
+    border: 1px solid var(--border);
+    background: #fff;
+    border-radius: 12px;
+    padding: 12px 14px;
+    cursor: pointer;
+    text-align: left;
+    transition: background-color 120ms ease, box-shadow 140ms ease, border-color 120ms ease, transform 60ms ease;
+}
+
+.visit-item:hover {
+    background: var(--bg-soft);
+    box-shadow: 0 6px 16px rgba(37, 48, 82, 0.10);
+}
+
+.visit-item:active {
+    transform: translateY(1px);
+}
+
+.visit-date {
+    font-weight: 700;
+    color: #1b2559;
+}
+
+.visit-time {
+    opacity: .7;
+    margin-left: 6px;
+    font-weight: 500;
+}
+
+.visit-complaint {
+    color: var(--text);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.visit-right {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.pill {
+    min-width: 24px;
+    height: 24px;
+    border-radius: 999px;
+    display: inline-grid;
+    place-items: center;
+    font-size: 12px;
+    padding: 0 6px;
+    background: #eef4ff;
+    color: var(--primary);
+    border: 1px solid #cfe0ff;
+}
+
+.visit-arrow {
+    font-size: 20px;
+    color: #94a3b8;
+    line-height: 1;
+}
+
+.visit-sep {
+    height: 10px;
+}
+
+/* ===== Modal detail layout ===== */
+.visit-modal {
+    gap: 12px;
+}
+
+.vm-row {
+    display: grid;
+    grid-template-columns: 120px 1fr;
+    gap: 12px;
+}
+
+.vm-label {
+    font-size: 12px;
+    color: var(--muted);
+}
+
+.vm-value {
+    white-space: pre-wrap;
+}
+
+.vm-files {
+    border-top: 1px solid var(--border);
+    padding-top: 10px;
+    display: grid;
+    gap: 10px;
+}
+
+.vm-files-head {
+    display: flex;
+    gap: 6px;
+    align-items: baseline;
+}
+
+.vm-file-row {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 10px;
+    padding: 8px 10px;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    background: #fff;
+}
+
+.vm-file-info {
+    display: grid;
+    gap: 2px;
+}
+
+.vm-file-name {
+    font-weight: 600;
+}
+
+.vm-file-meta {
+    font-size: 12px;
+    color: var(--muted);
+}
+
+.vm-file-add {
+    display: grid;
+    gap: 6px;
+}
+
+.form-card {
+    padding: 18px;
+}
+
+.form-patient .form-row {
+    display: grid;
+    gap: 10px;
+}
+
+.form-patient .form-row.two {
+    grid-template-columns: 1fr 1fr;
+}
+
+.form-patient .form-col {
+    display: grid;
+    gap: 6px;
+}
+
+/* Responsive tweaks */
+@media (max-width: 800px) {
+    .form-visit .form-row.two {
+        grid-template-columns: 1fr;
+    }
+
+    .visit-item {
+        grid-template-columns: 1fr auto;
+    }
+
+    .visit-date {
+        font-weight: 700;
+    }
+
+    .visit-complaint {
+        grid-column: 1 / -1;
+    }
+
+
+    .form-patient .form-row.two {
+        grid-template-columns: 1fr;
+    }
+
+    /* --- Search bar --- */
+    .searchbar {
+        display: grid;
+        grid-template-columns: 20px 1fr auto;
+        align-items: center;
+        gap: 8px;
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        padding: 8px 10px;
+        background: #fff;
+    }
+
+    .search-ico {
+        font-size: 14px;
+        opacity: .7;
+    }
+
+    .search-input {
+        border: 0;
+        outline: 0;
+        background: transparent;
+        font-size: 14px;
+        padding: 4px 2px;
+    }
+
+    .search-clear {
+        border: 0;
+        background: transparent;
+        cursor: pointer;
+        font-size: 14px;
+        opacity: .6;
+    }
+
+    .search-clear:hover {
+        opacity: 1;
+    }
+
+    /* --- Table niceties & empty state --- */
+    .table.card {
+        padding: 0;
+    }
+
+    .trow:hover {
+        background: #fbfdff;
+    }
+
+    .link {
+        color: var(--primary);
+        text-decoration: none;
+    }
+
+    .link:hover {
+        color: var(--primary-700);
+    }
+
+    .empty-state {
+        padding: 28px;
+        text-align: center;
+        color: var(--muted);
+    }
+
+    .empty-emoji {
+        font-size: 28px;
+        margin-bottom: 6px;
+    }
+
+    .empty-title {
+        font-weight: 700;
+        color: var(--text);
+    }
+
+    .empty-sub {
+        font-size: 13px;
+    }
+
+    /* --- Dashboard upcoming appointments --- */
+    .appt-item {
+        display: grid;
+        grid-template-columns: 1fr auto;
+        gap: 10px;
+        padding: 12px 10px;
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        background: #fff;
+        margin-bottom: 8px;
+    }
+
+    .appt-item:hover {
+        background: var(--bg-soft);
+    }
+
+    .appt-time {
+        font-weight: 700;
+        color: #1b2559;
+    }
+
+    .appt-time-sub {
+        font-weight: 500;
+        opacity: .8;
+    }
+
+    .appt-meta {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        margin-top: 4px;
+    }
+
+    .appt-right {
+        display: grid;
+        place-items: center;
+    }
+
+    .appt-patient {
+        font-weight: 600;
+    }
+
+    .dot {
+        opacity: .5;
+    }
+
+    /* Status badges */
+    .badge {
+        display: inline-block;
+        padding: 4px 8px;
+        border-radius: 999px;
+        font-size: 12px;
+        font-weight: 600;
+        border: 1px solid transparent;
+    }
+
+    .badge--info {
+        background: #eef4ff;
+        color: var(--primary);
+        border-color: #cfe0ff;
+    }
+
+    .badge--success {
+        background: #e7f9f1;
+        color: #0c8c55;
+        border-color: #b9efd7;
+    }
+
+    .badge--danger {
+        background: #ffecec;
+        color: #b42318;
+        border-color: #ffcccc;
+    }
+
+    /* Small chips, reused for room etc. */
+    .chip {
+        font-size: 12px;
+        padding: 2px 8px;
+        border-radius: 999px;
+        border: 1px solid var(--border);
+        background: #fff;
+    }
+}

@@ -137,15 +137,19 @@ export default function PatientDetails() {
 
     async function prepareModalFiles(visitId) {
         const files = filesByVisit.get(visitId) || [];
-        const entries = await Promise.all(
-            files.map(async (f) => [f.id, await signedUrl(f.storage_key)])
-        );
+        const entries = await Promise.all(files.map(async (f) => [f.id, await signedUrl(f.storage_key)]));
         const map = {};
         entries.forEach(([id, u]) => (map[id] = u));
         setOpenVisitUrlMap(map);
     }
 
     const fullName = useMemo(() => (p ? `${p.first_name} ${p.last_name}` : ""), [p]);
+    const initials = useMemo(() => {
+        if (!p) return "";
+        const first = (p.first_name || "").trim()[0] || "";
+        const last = (p.last_name || "").trim()[0] || "";
+        return (first + last).toUpperCase();
+    }, [p]);
 
     return (
         <div className="page">
@@ -159,40 +163,79 @@ export default function PatientDetails() {
             ) : (
                 <>
                     {/* Patient core card */}
-                    <div className="card">
-                        <h3 style={{ marginTop: 0 }}>{fullName}</h3>
-                        <div>Phone: {p.phone || "—"}</div>
-                        <div>DOB: {p.dob ? new Date(p.dob).toLocaleDateString() : "—"}</div>
-                        <div>Notes: {p.notes || "—"}</div>
+                    <div className="card patient-card">
+                        <div className="patient-hero">
+                            <div className="patient-avatar" aria-hidden>{initials || "👤"}</div>
+                            <div className="patient-id-block">
+                                <div className="patient-name">{fullName}</div>
+                                <div className="patient-meta">
+                                    <span className="chip">{p.dob ? new Date(p.dob).toLocaleDateString() : "DOB —"}</span>
+                                    <span className="chip">{p.phone || "Phone —"}</span>
+                                </div>
+                            </div>
+                        </div>
+                        {p.notes && (
+                            <div className="patient-notes">
+                                <div className="label">Notes</div>
+                                <div className="note-text">{p.notes}</div>
+                            </div>
+                        )}
                     </div>
 
                     {/* New Visit form */}
                     <div className="grid2" style={{ marginTop: 12 }}>
                         <div className="card">
-                            <h3 style={{ marginTop: 0 }}>New Visit</h3>
-                            <form onSubmit={addVisit} className="form">
-                                <label>Complaint</label>
-                                <textarea
-                                    value={vform.complaint}
-                                    onChange={(e) => setVform((s) => ({ ...s, complaint: e.target.value }))}
-                                />
-                                <label>Diagnosis</label>
-                                <textarea
-                                    value={vform.diagnosis}
-                                    onChange={(e) => setVform((s) => ({ ...s, diagnosis: e.target.value }))}
-                                />
-                                <label>Treatment</label>
-                                <textarea
-                                    value={vform.treatment}
-                                    onChange={(e) => setVform((s) => ({ ...s, treatment: e.target.value }))}
-                                />
-                                <label>Remarks</label>
-                                <textarea
-                                    value={vform.remarks}
-                                    onChange={(e) => setVform((s) => ({ ...s, remarks: e.target.value }))}
-                                />
-                                <label>Attach file (optional)</label>
-                                <input type="file" onChange={(e) => setVfile(e.target.files?.[0] || null)} />
+                            <div className="section-head">
+                                <h3>New Visit</h3>
+                                <span className="muted">Fill in details and attach an optional file</span>
+                            </div>
+                            <form onSubmit={addVisit} className="form form-visit">
+                                <div className="form-row">
+                                    <div className="form-col">
+                                        <label>Complaint</label>
+                                        <textarea
+                                            className="input"
+                                            value={vform.complaint}
+                                            onChange={(e) => setVform((s) => ({ ...s, complaint: e.target.value }))}
+                                        />
+                                    </div>
+                                </div>
+
+                                <div className="form-row two">
+                                    <div className="form-col">
+                                        <label>Diagnosis</label>
+                                        <textarea
+                                            className="input"
+                                            value={vform.diagnosis}
+                                            onChange={(e) => setVform((s) => ({ ...s, diagnosis: e.target.value }))}
+                                        />
+                                    </div>
+                                    <div className="form-col">
+                                        <label>Treatment</label>
+                                        <textarea
+                                            className="input"
+                                            value={vform.treatment}
+                                            onChange={(e) => setVform((s) => ({ ...s, treatment: e.target.value }))}
+                                        />
+                                    </div>
+                                </div>
+
+                                <div className="form-row">
+                                    <div className="form-col">
+                                        <label>Remarks</label>
+                                        <textarea
+                                            className="input"
+                                            value={vform.remarks}
+                                            onChange={(e) => setVform((s) => ({ ...s, remarks: e.target.value }))}
+                                        />
+                                    </div>
+                                </div>
+
+                                <div className="form-row align-center">
+                                    <label className="muted">Attach file (optional)</label>
+                                    <input className="input-file" type="file" onChange={(e) => setVfile(e.target.files?.[0] || null)} />
+                                </div>
+
                                 <div className="row" style={{ marginTop: 6 }}>
                                     <button className="btn btn-primary" disabled={uploading}>
                                         {uploading ? "Saving…" : "Add Visit"}
@@ -201,19 +244,32 @@ export default function PatientDetails() {
                             </form>
                         </div>
 
-                        {/* (Tip card removed as requested) */}
+                        {/* Right column placeholder (kept empty for balance / future widgets) */}
+                        <div className="card soft-card">
+                            <div className="section-head">
+                                <h3>Overview</h3>
+                                <span className="muted">Visits: {visits.length}</span>
+                            </div>
+                            <div className="muted" style={{ fontSize: 14 }}>
+                                Most recent: {visits[0] ? new Date(visits[0].visit_date).toLocaleString() : "—"}
+                            </div>
+                        </div>
                     </div>
 
                     {err && <div className="error" style={{ marginTop: 12 }}>{err}</div>}
 
                     {/* Visits list (stylish, compact, clickable items) */}
                     <div className="card" style={{ marginTop: 12 }}>
-                        <h3 style={{ marginTop: 0 }}>Visits</h3>
+                        <div className="section-head">
+                            <h3>Visits</h3>
+                            <span className="muted">Click to view details and files</span>
+                        </div>
                         {!visits.length && <div>No visits yet.</div>}
                         {!!visits.length && (
                             <div className="visit-list">
                                 {visits.map((v, idx) => {
                                     const complaint = (v.complaint || "").trim();
+                                    const fCount = (filesByVisit.get(v.id) || []).length;
                                     return (
                                         <div key={v.id}>
                                             <button
@@ -225,15 +281,18 @@ export default function PatientDetails() {
                                                 title="Open visit details"
                                             >
                                                 <div className="visit-date">
-                                                    {new Date(v.visit_date).toLocaleDateString()}{" "}
+                                                    {new Date(v.visit_date).toLocaleDateString()}
                                                     <span className="visit-time">
                                                         {new Date(v.visit_date).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
                                                     </span>
                                                 </div>
                                                 <div className="visit-complaint">
-                                                    {complaint || <span style={{ opacity: 0.6 }}>No complaint recorded</span>}
+                                                    {complaint || <span className="muted">No complaint recorded</span>}
                                                 </div>
-                                                <div className="visit-arrow">›</div>
+                                                <div className="visit-right">
+                                                    {fCount > 0 && <span className="pill">{fCount}</span>}
+                                                    <span className="visit-arrow">›</span>
+                                                </div>
                                             </button>
 
                                             {idx < visits.length - 1 && <div className="visit-sep" />}
@@ -256,53 +315,62 @@ export default function PatientDetails() {
                 title={openVisit ? `Visit — ${new Date(openVisit.visit_date).toLocaleString()}` : "Visit"}
             >
                 {openVisit && (
-                    <div className="stack gap-2">
-                        {openVisit.complaint && (
-                            <div><b>Complaint:</b><br />{openVisit.complaint}</div>
-                        )}
-                        {openVisit.diagnosis && (
-                            <div><b>Diagnosis:</b><br />{openVisit.diagnosis}</div>
-                        )}
-                        {openVisit.treatment && (
-                            <div><b>Treatment:</b><br />{openVisit.treatment}</div>
-                        )}
-                        {openVisit.remarks && (
-                            <div><b>Remarks:</b><br />{openVisit.remarks}</div>
-                        )}
+                    <div className="stack gap-2 visit-modal">
+                        <div className="vm-row">
+                            <div className="vm-label">Complaint</div>
+                            <div className="vm-value">{openVisit.complaint || <span className="muted">—</span>}</div>
+                        </div>
+                        <div className="vm-row">
+                            <div className="vm-label">Diagnosis</div>
+                            <div className="vm-value">{openVisit.diagnosis || <span className="muted">—</span>}</div>
+                        </div>
+                        <div className="vm-row">
+                            <div className="vm-label">Treatment</div>
+                            <div className="vm-value">{openVisit.treatment || <span className="muted">—</span>}</div>
+                        </div>
+                        <div className="vm-row">
+                            <div className="vm-label">Remarks</div>
+                            <div className="vm-value">{openVisit.remarks || <span className="muted">—</span>}</div>
+                        </div>
 
                         {/* Files for this visit */}
-                        <div className="stack" style={{ marginTop: 6 }}>
-                            <b>Files</b>
-                            {!(filesByVisit.get(openVisit.id) || []).length && <div>—</div>}
+                        <div className="vm-files">
+                            <div className="vm-files-head">
+                                <b>Files</b>
+                                <span className="muted">({(filesByVisit.get(openVisit.id) || []).length})</span>
+                            </div>
+
+                            {!(filesByVisit.get(openVisit.id) || []).length && <div className="muted">No files</div>}
+
                             {(filesByVisit.get(openVisit.id) || []).map((f) => (
-                                <div key={f.id} style={{ display: "flex", gap: 8, alignItems: "center", justifyContent: "space-between" }}>
-                                    <div style={{ fontSize: 14 }}>
-                                        {f.file_name} ({Math.round((f.size_bytes || 0) / 1024)} KB) •{" "}
-                                        {new Date(f.created_at).toLocaleString()}
+                                <div key={f.id} className="vm-file-row">
+                                    <div className="vm-file-info">
+                                        <div className="vm-file-name">{f.file_name}</div>
+                                        <div className="vm-file-meta">
+                                            {Math.round((f.size_bytes || 0) / 1024)} KB • {new Date(f.created_at).toLocaleString()}
+                                        </div>
                                     </div>
                                     {openVisitUrlMap[f.id] && (
                                         <a href={openVisitUrlMap[f.id]} target="_blank" rel="noreferrer" className="btn">Open</a>
                                     )}
                                 </div>
                             ))}
-                        </div>
 
-                        {/* Add file to this visit */}
-                        <div style={{ marginTop: 8 }}>
-                            <label className="stack gap-1">
-                                <span style={{ fontSize: 13, color: "var(--muted)" }}>Add file to this visit</span>
-                                <input
-                                    type="file"
-                                    onChange={async (e) => {
-                                        const file = e.target.files?.[0];
-                                        if (file) await addFileForVisit(openVisit.id, file);
-                                        e.target.value = "";
-                                    }}
-                                />
-                            </label>
+                            <div className="vm-file-add">
+                                <label className="stack gap-1">
+                                    <span className="muted">Add file to this visit</span>
+                                    <input
+                                        type="file"
+                                        onChange={async (e) => {
+                                            const file = e.target.files?.[0];
+                                            if (file) await addFileForVisit(openVisit.id, file);
+                                            e.target.value = "";
+                                        }}
+                                    />
+                                </label>
+                                {uploading && <div className="muted" style={{ fontSize: 13 }}>Uploading…</div>}
+                            </div>
                         </div>
-
-                        {uploading && <div style={{ opacity: 0.7, fontSize: 13 }}>Uploading…</div>}
                     </div>
                 )}
             </Modal>

@@ -8,6 +8,7 @@ import Modal from "../../components/Modal";
 import VisitFromAppointment from "../../components/VisitFromAppointment";
 import SelectLikeCombobox from "../../components/SelectLikeCombobox";
 import useDebouncedValue from "../../hooks/useDebouncedValue";
+import useMediaQuery from "../../hooks/useMediaQuery";
 
 const locales = { "en-US": enUS };
 const localizer = dateFnsLocalizer({
@@ -19,10 +20,12 @@ const localizer = dateFnsLocalizer({
 });
 
 export default function CalendarPage() {
+    const isMobile = useMediaQuery("(max-width: 640px)");
+
     const [events, setEvents] = useState([]); // {id, title, start, end, resource}
     const [err, setErr] = useState("");
 
-    // toolbar control (fix Month/Week/Day/Agenda, Today, Back, Next)
+    // toolbar control
     const [view, setView] = useState("week");        // "month" | "week" | "day" | "agenda"
     const [date, setDate] = useState(new Date());    // current visible date
 
@@ -45,6 +48,15 @@ export default function CalendarPage() {
     // event action modal (complete / no-show) + visit modal
     const [actionAppt, setActionAppt] = useState(null); // raw appointment row
     const [visitModalOpen, setVisitModalOpen] = useState(false);
+
+    // switch to Day view automatically on small screens; Week on larger
+    useEffect(() => {
+        setView((prev) => {
+            if (isMobile && (prev === "week" || prev === "month" || prev === "agenda")) return "day";
+            if (!isMobile && prev === "day") return "week";
+            return prev;
+        });
+    }, [isMobile]);
 
     const load = useCallback(async () => {
         setErr("");
@@ -210,6 +222,15 @@ export default function CalendarPage() {
 
     const selectable = true;
     const defaultDate = useMemo(() => new Date(), []);
+    const minTime = useMemo(() => new Date(1970, 1, 1, 8, 0, 0), []);
+    const maxTime = useMemo(() => new Date(1970, 1, 1, 20, 0, 0), []);
+    const scrollToTime = minTime; // initial scroll position
+
+    // touch-friendly long-press selection for mobile
+    const longPressThreshold = isMobile ? 250 : 50;
+
+    // make the card height adapt a bit on mobile
+    const calendarHeight = isMobile ? 520 : 600;
 
     return (
         <div className="page">
@@ -219,22 +240,25 @@ export default function CalendarPage() {
                 <Calendar
                     localizer={localizer}
                     events={events}
-                    // toolbar buttons now work (controlled)
+                    views={["month", "week", "day", "agenda"]}
+                    popup                              // show "+x more" as popup in month view
                     view={view}
                     onView={(v) => setView(v)}
                     date={date}
                     onNavigate={(newDate) => setDate(newDate)}
-                    defaultView="week"
                     selectable={selectable}
                     onSelectSlot={onSelectSlot}
                     onSelectEvent={onEventSelect}
                     eventPropGetter={eventPropGetter}
-                    min={new Date(1970, 1, 1, 8, 0, 0)}
-                    max={new Date(1970, 1, 1, 20, 0, 0)}
-                    style={{ height: 600 }}
+                    min={minTime}
+                    max={maxTime}
+                    scrollToTime={scrollToTime}
+                    longPressThreshold={longPressThreshold}
                     step={30}
                     timeslots={2}
+                    style={{ height: calendarHeight }}
                     defaultDate={defaultDate}
+                    showMultiDayTimes={!isMobile}
                 />
             </div>
 
